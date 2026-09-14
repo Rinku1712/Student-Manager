@@ -1,13 +1,11 @@
+import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-
-dotenv.config();
 
 const app = express();
 

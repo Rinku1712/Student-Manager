@@ -94,6 +94,7 @@ export const authService = {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    console.log(`[AUTH] Signup started for: ${normalizedEmail}`);
 
     // Check duplicate email
     const existing = await userRepository.findByEmail(normalizedEmail);
@@ -125,6 +126,7 @@ export const authService = {
     const verificationTokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000
     ).toISOString(); // 24 hours
+    console.log(`[AUTH] Verification token generated for: ${normalizedEmail}`);
 
     const allUsers = await userRepository.getAll();
     const newUserId = generateUserId(allUsers);
@@ -147,7 +149,7 @@ export const authService = {
 
     await userRepository.create(newUser);
 
-    // Send verification email via Nodemailer
+    // Send verification email via Nodemailer (will throw if SMTP fails)
     await emailService.sendVerificationEmail({
       to: normalizedEmail,
       name: newUser.name,
@@ -165,10 +167,12 @@ export const authService = {
       throw new AuthError("Verification token is required.", 400);
     }
 
+    console.log(`[AUTH] Validating email verification token...`);
     const tokenHash = hashToken(rawToken.trim());
     const user = await userRepository.findByVerificationTokenHash(tokenHash);
 
     if (!user) {
+      console.warn(`[AUTH] Verification failed: Token not found or already verified.`);
       throw new AuthError(
         "Invalid or expired verification link. Please request a new one.",
         400
@@ -179,6 +183,7 @@ export const authService = {
       user.verificationTokenExpiresAt &&
       new Date(user.verificationTokenExpiresAt) < new Date()
     ) {
+      console.warn(`[AUTH] Verification failed: Token expired for ${user.email}`);
       throw new AuthError(
         "Verification link has expired. Please request a new verification email.",
         400,
@@ -192,6 +197,7 @@ export const authService = {
       verificationTokenExpiresAt: null,
     });
 
+    console.log(`[AUTH] ✅ Email verified successfully for: ${user.email}`);
     return sanitizeUser(updated);
   },
 
@@ -204,10 +210,12 @@ export const authService = {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    console.log(`[AUTH] Resend verification requested for: ${normalizedEmail}`);
     const user = await userRepository.findByEmail(normalizedEmail);
 
-    // Generic response to prevent email enumeration
+    // Generic response to prevent email enumeration if user does not exist
     if (!user) {
+      console.log(`[AUTH] Resend requested for non-existent user: ${normalizedEmail}`);
       return {
         message:
           "If an unverified account exists for this email, a verification link has been sent.",
@@ -215,6 +223,7 @@ export const authService = {
     }
 
     if (user.emailVerified) {
+      console.log(`[AUTH] Resend skipped: Account ${normalizedEmail} is already verified.`);
       return {
         message: "Your account is already verified. You can log in directly.",
         alreadyVerified: true,
@@ -226,12 +235,15 @@ export const authService = {
     const verificationTokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000
     ).toISOString();
+    console.log(`[AUTH] New verification token generated for: ${normalizedEmail}`);
 
+    // Invalidate old token by updating to new token hash
     await userRepository.update(user.id, {
       verificationTokenHash,
       verificationTokenExpiresAt,
     });
 
+    // Send email through Nodemailer (throws if SMTP fails)
     await emailService.sendVerificationEmail({
       to: normalizedEmail,
       name: user.name,
@@ -240,7 +252,7 @@ export const authService = {
 
     return {
       message:
-        "If an unverified account exists for this email, a verification link has been sent.",
+        "A new verification email has been sent. Please check your inbox and spam folder.",
     };
   },
 

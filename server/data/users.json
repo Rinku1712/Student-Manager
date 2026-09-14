@@ -5,13 +5,13 @@
     "email": "rohillarinku446@gmail.com",
     "passwordHash": "$2b$12$6nRNXmbSPIskkOALSdv8K.P.6dEdSIWRc7b/dnrFHkEFY8dLDD2lW",
     "emailVerified": false,
-    "verificationTokenHash": "d57bdca4574ff28e92f20f8dafad42c715848218782005477a8434a5675193fc",
-    "verificationTokenExpiresAt": "2026-09-15T13:45:06.207Z",
+    "verificationTokenHash": "2c5f96c44efe24919304165e3828d9d407959801c560e3005ac5bb0da991c637",
+    "verificationTokenExpiresAt": "2026-09-15T13:54:17.358Z",
     "resetTokenHash": null,
     "resetTokenExpiresAt": null,
     "role": "admin",
     "createdAt": "2026-09-14T13:42:44.090Z",
-    "updatedAt": "2026-09-14T13:45:06.207Z"
+    "updatedAt": "2026-09-14T13:54:17.359Z"
   },
   {
     "id": "USR-2026-0002",
