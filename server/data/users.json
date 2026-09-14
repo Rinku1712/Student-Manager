@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "id": "USR-2026-0003",
+    "name": "Rinku",
+    "email": "rohillarinku446@gmail.com",
+    "passwordHash": "$2b$12$6nRNXmbSPIskkOALSdv8K.P.6dEdSIWRc7b/dnrFHkEFY8dLDD2lW",
+    "emailVerified": false,
+    "verificationTokenHash": "d57bdca4574ff28e92f20f8dafad42c715848218782005477a8434a5675193fc",
+    "verificationTokenExpiresAt": "2026-09-15T13:45:06.207Z",
+    "resetTokenHash": null,
+    "resetTokenExpiresAt": null,
+    "role": "admin",
+    "createdAt": "2026-09-14T13:42:44.090Z",
+    "updatedAt": "2026-09-14T13:45:06.207Z"
+  },
+  {
+    "id": "USR-2026-0002",
+    "name": "Dr. Alan Turing",
+    "email": "alan.turing@university.edu",
+    "passwordHash": "$2b$12$EHr6ACRPJ.blCTIIH29CWugAMw2rTKateeELzYMb8ZRdf/0XwXyIq",
+    "emailVerified": true,
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
+    "resetTokenHash": null,
+    "resetTokenExpiresAt": null,
+    "role": "admin",
+    "createdAt": "2026-09-14T13:32:56.477Z",
+    "updatedAt": "2026-09-14T13:33:31.355Z"
+  },
+  {
+    "id": "USR-2026-0001",
+    "name": "Admin User",
+    "email": "admin@example.com",
+    "passwordHash": "$2b$12$Fd7JZbvuIUHBG9yy0fPnTeOOoKB4NVAHSHAfQAzfwmL2PJMZWkfSm",
+    "emailVerified": true,
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
+    "resetTokenHash": null,
+    "resetTokenExpiresAt": null,
+    "role": "admin",
+    "createdAt": "2026-09-14T13:20:25.152Z",
+    "updatedAt": "2026-09-14T13:24:51.546Z"
+  }
+]
