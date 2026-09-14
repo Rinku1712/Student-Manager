@@ -1,17 +1,45 @@
 [
   {
+    "id": "USR-2026-0005",
+    "name": "Clara Barton",
+    "email": "clara.barton@testdomain.edu",
+    "passwordHash": "$2b$12$3XTAe5hlDsYg5YLqFYcSHenIaZlTZ97sfgGJjg2KMxYVhP5FzV4nK",
+    "emailVerified": true,
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
+    "resetTokenHash": null,
+    "resetTokenExpiresAt": null,
+    "role": "admin",
+    "createdAt": "2026-09-14T14:02:22.678Z",
+    "updatedAt": "2026-09-14T14:04:04.071Z"
+  },
+  {
+    "id": "USR-2026-0004",
+    "name": "Rinku",
+    "email": "rinkurohilla446@gmail.com",
+    "passwordHash": "$2b$12$X8uRO5xcIjvXfThHYBHNlehY1Ai2HigVXFwpODPNTpsxUunIPM.Fy",
+    "emailVerified": false,
+    "verificationTokenHash": "da1a04e33f14c8f528ee77b19fc677543dcf694bbc92e321bffc8c0591ad210d",
+    "verificationTokenExpiresAt": "2026-09-15T14:01:42.171Z",
+    "resetTokenHash": null,
+    "resetTokenExpiresAt": null,
+    "role": "admin",
+    "createdAt": "2026-09-14T14:01:42.172Z",
+    "updatedAt": "2026-09-14T14:01:42.172Z"
+  },
+  {
     "id": "USR-2026-0003",
     "name": "Rinku",
     "email": "rohillarinku446@gmail.com",
     "passwordHash": "$2b$12$6nRNXmbSPIskkOALSdv8K.P.6dEdSIWRc7b/dnrFHkEFY8dLDD2lW",
-    "emailVerified": false,
-    "verificationTokenHash": "2c5f96c44efe24919304165e3828d9d407959801c560e3005ac5bb0da991c637",
-    "verificationTokenExpiresAt": "2026-09-15T13:54:17.358Z",
+    "emailVerified": true,
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
     "resetTokenHash": null,
     "resetTokenExpiresAt": null,
     "role": "admin",
     "createdAt": "2026-09-14T13:42:44.090Z",
-    "updatedAt": "2026-09-14T13:54:17.359Z"
+    "updatedAt": "2026-09-14T13:58:48.801Z"
   },
   {
     "id": "USR-2026-0002",
