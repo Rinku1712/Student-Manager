@@ -1,0 +1,26 @@
+[
+  {
+    "FirstName": "Samiksha",
+    "LastName": "Rathi",
+    "Email": "rathisamiksha446@gmail.com",
+    "Mobile": "9991053089",
+    "Course": "B.SC",
+    "Status": "active",
+    "Dob": "2007-05-12",
+    "id": "STU-2026-0002",
+    "studentId": "STU-2026-0002",
+    "registrationDate": "2026-09-14T13:13:36.814Z"
+  },
+  {
+    "FirstName": "Rinku",
+    "LastName": "Rohilla",
+    "Email": "rohillarinku446@gmail.com",
+    "Mobile": "9991053089",
+    "Course": "BCA",
+    "Status": "active",
+    "Dob": "2005-07-17",
+    "id": "STU-2026-0001",
+    "studentId": "STU-2026-0001",
+    "registrationDate": "2026-09-14T13:10:10.662Z"
+  }
+]
