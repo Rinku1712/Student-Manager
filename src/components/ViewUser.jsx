@@ -82,8 +82,8 @@ function ViewUser({ selectedUser, onClose, onEdit }) {
             <strong>{selectedUser.Email || "No email provided"}</strong>
           </div>
           <div>
-            <span>Phone Number</span>
-            <strong>{selectedUser.Phone || "Not provided"}</strong>
+            <span>Mobile Number</span>
+            <strong>{selectedUser.Mobile || selectedUser.Phone || "Not provided"}</strong>
           </div>
           <div>
             <span>Enrolled Course</span>

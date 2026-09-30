@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Swal from "sweetalert2";
+import studentApi from "../services/studentApi";
 
 const COURSES = [
   "BCA",
@@ -12,35 +13,20 @@ const COURSES = [
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MOBILE_REGEX = /^\d{10}$/;
 
 const initialForm = {
   FirstName: "",
   LastName: "",
   Email: "",
-  Phone: "",
+  Mobile: "",
   Password: "",
   Dob: "",
   Status: "active",
   Course: "",
 };
 
-function generateStudentId(existingStudents = []) {
-  const year = new Date().getFullYear();
-  let nextNum = existingStudents.length + 1;
-  let candidate = `STU-${year}-${String(nextNum).padStart(4, "0")}`;
-
-  while (
-    existingStudents.some(
-      (s) => s.studentId === candidate || s.id === candidate
-    )
-  ) {
-    nextNum++;
-    candidate = `STU-${year}-${String(nextNum).padStart(4, "0")}`;
-  }
-  return candidate;
-}
-
-function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
+function RegisterStudent({ addStudent, onNavigate }) {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +35,7 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
     formData.FirstName?.trim() ||
     formData.LastName?.trim() ||
     formData.Email?.trim() ||
-    formData.Phone?.trim() ||
+    formData.Mobile?.trim() ||
     formData.Dob ||
     formData.Course ||
     formData.Password
@@ -68,6 +54,10 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
         if (!value.trim()) return "Email address is required";
         if (!EMAIL_REGEX.test(value.trim())) return "Enter a valid email address";
         return "";
+      case "Mobile":
+        if (!value.trim()) return "Mobile number is required";
+        if (!MOBILE_REGEX.test(value.trim())) return "Mobile number must be exactly 10 digits";
+        return "";
       case "Status":
         if (!value) return "Enrollment status is required";
         return "";
@@ -85,6 +75,21 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
+    // For Mobile, restrict typing to numbers and max 10 digits
+    if (name === "Mobile") {
+      const cleanValue = value.replace(/\D/g, "").slice(0, 10);
+      setFormData((current) => ({ ...current, [name]: cleanValue }));
+
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: validateField(name, cleanValue),
+        }));
+      }
+      return;
+    }
+
     setFormData((current) => ({ ...current, [name]: value }));
 
     if (errors[name]) {
@@ -98,7 +103,7 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
   const validateAll = () => {
     const newErrors = {};
     Object.keys(initialForm).forEach((key) => {
-      if (key === "Dob" || key === "Phone") return;
+      if (key === "Dob") return;
       const err = validateField(key, formData[key]);
       if (err) newErrors[key] = err;
     });
@@ -114,75 +119,86 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
     }
 
     const trimmedEmail = formData.Email.trim().toLowerCase();
+    const trimmedMobile = formData.Mobile.trim();
 
-    // Duplicate email check
-    const emailExists = existingStudents.some(
-      (s) => s.Email?.trim().toLowerCase() === trimmedEmail
-    );
+    const confirmResult = await Swal.fire({
+      title: "Register Student?",
+      html: `Register <strong>${formData.FirstName.trim()} ${formData.LastName.trim()}</strong> into the student directory?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Register Student",
+      cancelButtonText: "Review Details",
+      confirmButtonColor: "#0f766e",
+      cancelButtonColor: "#64748b",
+      reverseButtons: true,
+    });
 
-    if (emailExists) {
-      await Swal.fire({
-        title: "Duplicate Student",
-        text: "Student with this email already exists in the directory.",
-        icon: "error",
-        confirmButtonColor: "#0f766e",
-      });
-      setErrors((prev) => ({
-        ...prev,
-        Email: "This email is already registered",
-      }));
+    if (!confirmResult.isConfirmed) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const result = await Swal.fire({
-        title: "Register Student?",
-        html: `Register <strong>${formData.FirstName.trim()} ${formData.LastName.trim()}</strong> into the student directory?`,
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Register Student",
-        cancelButtonText: "Review Details",
-        confirmButtonColor: "#0f766e",
-        cancelButtonColor: "#64748b",
-        reverseButtons: true,
-      });
-
-      if (!result.isConfirmed) {
-        setIsSubmitting(false);
-        return;
-      }
-
-      const generatedId = generateStudentId(existingStudents);
-
-      const newStudent = {
+      const payload = {
         FirstName: formData.FirstName.trim(),
         LastName: formData.LastName.trim(),
         Email: trimmedEmail,
-        Phone: formData.Phone ? formData.Phone.trim() : "",
+        Mobile: trimmedMobile,
         Dob: formData.Dob || "",
         Password: formData.Password,
         Status: formData.Status,
         Course: formData.Course,
-        studentId: generatedId,
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        registrationDate: new Date().toISOString(),
       };
 
-      addStudent(newStudent);
+      const createdStudent = await studentApi.createStudent(payload);
+
+      if (addStudent) {
+        addStudent(createdStudent);
+      }
+
       setFormData(initialForm);
       setErrors({});
 
       await Swal.fire({
         title: "Student Registered Successfully",
-        text: `${newStudent.FirstName} ${newStudent.LastName} has been added with ID: ${generatedId}.`,
+        text: `${createdStudent.FirstName} ${createdStudent.LastName} has been added with ID: ${createdStudent.id || createdStudent.studentId}.`,
         icon: "success",
         timer: 1800,
         showConfirmButton: false,
       });
 
       onNavigate("students");
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      if (error.status === 409) {
+        await Swal.fire({
+          title: "Duplicate Email",
+          text: error.message || "A student with this email already exists.",
+          icon: "error",
+          confirmButtonColor: "#0f766e",
+        });
+        setErrors((prev) => ({
+          ...prev,
+          Email: "This email is already registered",
+        }));
+      } else if (error.status === 400 && error.details) {
+        setErrors(error.details);
+        await Swal.fire({
+          title: "Validation Error",
+          text: error.message || "Please correct the highlighted errors.",
+          icon: "error",
+          confirmButtonColor: "#0f766e",
+        });
+      } else {
+        await Swal.fire({
+          title: "Registration Failed",
+          text: error.message || "An unexpected error occurred while contacting the server.",
+          icon: "error",
+          confirmButtonColor: "#dc2626",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -218,6 +234,7 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
           className="back-link-btn"
           onClick={handleCancel}
           aria-label="Back to students list"
+          disabled={isSubmitting}
         >
           ← Back to Students
         </button>
@@ -233,9 +250,13 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
 
       {/* Registration Form Card */}
       <div className="form-card-container">
-        <form onSubmit={handleSubmit} noValidate className="registration-form">
+        <form onSubmit={handleSubmit} noValidate className="registration-form student-form">
           {/* Section 1: Personal Information */}
-          <fieldset className="form-section animate-fade-in-up" style={{ animationDelay: "60ms" }}>
+          <fieldset
+            className="form-section animate-fade-in-up"
+            style={{ animationDelay: "60ms" }}
+            disabled={isSubmitting}
+          >
             <legend className="section-legend">
               <span className="legend-badge">1</span>
               <span>Personal Information</span>
@@ -327,7 +348,11 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
           </fieldset>
 
           {/* Section 2: Contact Information */}
-          <fieldset className="form-section animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+          <fieldset
+            className="form-section animate-fade-in-up"
+            style={{ animationDelay: "120ms" }}
+            disabled={isSubmitting}
+          >
             <legend className="section-legend">
               <span className="legend-badge">2</span>
               <span>Contact Information</span>
@@ -358,23 +383,38 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
               </div>
 
               <div className="form-field-wrapper">
-                <label className="form-field" htmlFor="reg-phone">
-                  <span>Phone Number</span>
+                <label className="form-field" htmlFor="reg-mobile">
+                  <span>Mobile Number (10 digits) *</span>
                   <input
-                    id="reg-phone"
+                    id="reg-mobile"
                     type="tel"
-                    name="Phone"
-                    value={formData.Phone}
+                    name="Mobile"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={formData.Mobile}
                     onChange={handleChange}
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="e.g. 9876543210"
+                    className={errors.Mobile ? "input-error" : ""}
+                    aria-invalid={Boolean(errors.Mobile)}
+                    aria-describedby={errors.Mobile ? "reg-mb-err" : undefined}
+                    required
                   />
                 </label>
+                {errors.Mobile && (
+                  <span id="reg-mb-err" className="field-error-text" role="alert">
+                    {errors.Mobile}
+                  </span>
+                )}
               </div>
             </div>
           </fieldset>
 
           {/* Section 3: Academic Information */}
-          <fieldset className="form-section animate-fade-in-up" style={{ animationDelay: "180ms" }}>
+          <fieldset
+            className="form-section animate-fade-in-up"
+            style={{ animationDelay: "180ms" }}
+            disabled={isSubmitting}
+          >
             <legend className="section-legend">
               <span className="legend-badge">3</span>
               <span>Academic Information</span>
@@ -450,7 +490,16 @@ function RegisterStudent({ addStudent, existingStudents = [], onNavigate }) {
               className="primary-button form-submit-btn"
               disabled={isSubmitting}
             >
-              <span aria-hidden="true">+</span> Register Student
+              {isSubmitting ? (
+                <>
+                  <span className="spinner-dots" aria-hidden="true" />
+                  <span>Registering Student...</span>
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">+</span> Register Student
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
+import studentApi from "../services/studentApi";
 
 const COURSES = [
   "BCA",
@@ -12,19 +13,19 @@ const COURSES = [
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MOBILE_REGEX = /^\d{10}$/;
 
 function EditUser({
   editUser,
   setEditUser,
   setStudents,
   onStudentUpdated,
-  existingStudents = [],
 }) {
   const [draft, setDraft] = useState({
     FirstName: editUser?.FirstName || "",
     LastName: editUser?.LastName || "",
     Email: editUser?.Email || "",
-    Phone: editUser?.Phone || "",
+    Mobile: editUser?.Mobile || editUser?.Phone || "",
     Dob: editUser?.Dob || "",
     Status: editUser?.Status || "active",
     Course: editUser?.Course || "",
@@ -35,16 +36,17 @@ function EditUser({
   });
 
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !isSaving) {
         setEditUser(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [setEditUser]);
+  }, [setEditUser, isSaving]);
 
   if (!editUser) return null;
 
@@ -60,15 +62,10 @@ function EditUser({
       case "Email":
         if (!value.trim()) return "Email address is required";
         if (!EMAIL_REGEX.test(value.trim())) return "Enter a valid email address";
-        if (
-          existingStudents.some(
-            (s) =>
-              s.id !== draft.id &&
-              s.Email?.trim().toLowerCase() === value.trim().toLowerCase()
-          )
-        ) {
-          return "This email is already registered by another student";
-        }
+        return "";
+      case "Mobile":
+        if (!value.trim()) return "Mobile number is required";
+        if (!MOBILE_REGEX.test(value.trim())) return "Mobile number must be exactly 10 digits";
         return "";
       case "Status":
         if (!value) return "Status is required";
@@ -83,6 +80,20 @@ function EditUser({
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === "Mobile") {
+      const cleanValue = value.replace(/\D/g, "").slice(0, 10);
+      setDraft((current) => ({ ...current, [name]: cleanValue }));
+
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: validateField(name, cleanValue),
+        }));
+      }
+      return;
+    }
+
     setDraft((current) => ({ ...current, [name]: value }));
 
     if (errors[name]) {
@@ -95,8 +106,8 @@ function EditUser({
 
   const validateAll = () => {
     const newErrors = {};
-    ["FirstName", "LastName", "Email", "Status", "Course"].forEach((field) => {
-      const err = validateField(field, draft[field]);
+    ["FirstName", "LastName", "Email", "Mobile", "Status", "Course"].forEach((field) => {
+      const err = validateField(field, draft[field] || "");
       if (err) newErrors[field] = err;
     });
     setErrors(newErrors);
@@ -110,40 +121,81 @@ function EditUser({
       return;
     }
 
-    const updatedStudent = {
-      ...draft,
-      FirstName: draft.FirstName.trim(),
-      LastName: draft.LastName.trim(),
-      Email: draft.Email.trim().toLowerCase(),
-      Phone: draft.Phone ? draft.Phone.trim() : "",
-    };
+    setIsSaving(true);
 
-    setStudents((current) =>
-      current.map((student) =>
-        student.id === updatedStudent.id ? updatedStudent : student
-      )
-    );
+    try {
+      const payload = {
+        FirstName: draft.FirstName.trim(),
+        LastName: draft.LastName.trim(),
+        Email: draft.Email.trim().toLowerCase(),
+        Mobile: draft.Mobile.trim(),
+        Dob: draft.Dob || "",
+        Status: draft.Status,
+        Course: draft.Course,
+        Password: draft.Password,
+      };
 
-    if (onStudentUpdated) {
-      onStudentUpdated(updatedStudent);
+      const updatedRecord = await studentApi.updateStudent(draft.id, payload);
+
+      setStudents((current) =>
+        current.map((student) =>
+          student.id === updatedRecord.id ? updatedRecord : student
+        )
+      );
+
+      if (onStudentUpdated) {
+        onStudentUpdated(updatedRecord);
+      }
+
+      setEditUser(null);
+
+      await Swal.fire({
+        title: "Changes Saved",
+        text: `${updatedRecord.FirstName} ${updatedRecord.LastName}'s record was updated successfully.`,
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Update student error:", error);
+
+      if (error.status === 409) {
+        await Swal.fire({
+          title: "Duplicate Email",
+          text: error.message || "A student with this email already exists.",
+          icon: "error",
+          confirmButtonColor: "#0f766e",
+        });
+        setErrors((prev) => ({
+          ...prev,
+          Email: "This email is already registered by another student",
+        }));
+      } else if (error.status === 400 && error.details) {
+        setErrors(error.details);
+        await Swal.fire({
+          title: "Validation Error",
+          text: error.message || "Please correct the highlighted fields.",
+          icon: "error",
+          confirmButtonColor: "#0f766e",
+        });
+      } else {
+        await Swal.fire({
+          title: "Update Failed",
+          text: error.message || "Unable to update student. Please check server connection.",
+          icon: "error",
+          confirmButtonColor: "#dc2626",
+        });
+      }
+    } finally {
+      setIsSaving(false);
     }
-
-    setEditUser(null);
-
-    await Swal.fire({
-      title: "Changes Saved",
-      text: `${updatedStudent.FirstName} ${updatedStudent.LastName}'s record was updated.`,
-      icon: "success",
-      timer: 1500,
-      showConfirmButton: false,
-    });
   };
 
   return (
     <div
       className="modal-backdrop"
       role="presentation"
-      onClick={() => setEditUser(null)}
+      onClick={() => !isSaving && setEditUser(null)}
       aria-hidden="false"
     >
       <section
@@ -158,6 +210,7 @@ function EditUser({
           className="close-button"
           onClick={() => setEditUser(null)}
           aria-label="Close editor"
+          disabled={isSaving}
         >
           <span aria-hidden="true">&times;</span>
         </button>
@@ -178,6 +231,7 @@ function EditUser({
                   name="FirstName"
                   value={draft.FirstName || ""}
                   onChange={handleInputChange}
+                  disabled={isSaving}
                   className={errors.FirstName ? "input-error" : ""}
                   aria-invalid={Boolean(errors.FirstName)}
                   aria-describedby={errors.FirstName ? "edit-fn-error" : undefined}
@@ -199,6 +253,7 @@ function EditUser({
                   name="LastName"
                   value={draft.LastName || ""}
                   onChange={handleInputChange}
+                  disabled={isSaving}
                   className={errors.LastName ? "input-error" : ""}
                   aria-invalid={Boolean(errors.LastName)}
                   aria-describedby={errors.LastName ? "edit-ln-error" : undefined}
@@ -223,6 +278,7 @@ function EditUser({
                   name="Email"
                   value={draft.Email || ""}
                   onChange={handleInputChange}
+                  disabled={isSaving}
                   className={errors.Email ? "input-error" : ""}
                   aria-invalid={Boolean(errors.Email)}
                   aria-describedby={errors.Email ? "edit-em-error" : undefined}
@@ -237,17 +293,29 @@ function EditUser({
             </div>
 
             <div className="form-field-wrapper">
-              <label className="form-field" htmlFor="edit-phone">
-                <span>Phone Number</span>
+              <label className="form-field" htmlFor="edit-mobile">
+                <span>Mobile Number (10 digits) *</span>
                 <input
-                  id="edit-phone"
+                  id="edit-mobile"
                   type="tel"
-                  name="Phone"
-                  value={draft.Phone || ""}
+                  name="Mobile"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={draft.Mobile || ""}
                   onChange={handleInputChange}
-                  placeholder="+1 (555) 000-0000"
+                  disabled={isSaving}
+                  placeholder="e.g. 9876543210"
+                  className={errors.Mobile ? "input-error" : ""}
+                  aria-invalid={Boolean(errors.Mobile)}
+                  aria-describedby={errors.Mobile ? "edit-mb-error" : undefined}
+                  required
                 />
               </label>
+              {errors.Mobile && (
+                <span id="edit-mb-error" className="field-error-text" role="alert">
+                  {errors.Mobile}
+                </span>
+              )}
             </div>
           </div>
 
@@ -261,6 +329,7 @@ function EditUser({
                   name="Dob"
                   value={draft.Dob || ""}
                   onChange={handleInputChange}
+                  disabled={isSaving}
                 />
               </label>
             </div>
@@ -273,6 +342,7 @@ function EditUser({
                   name="Status"
                   value={(draft.Status || "").toLowerCase()}
                   onChange={handleInputChange}
+                  disabled={isSaving}
                   className={errors.Status ? "input-error" : ""}
                   aria-invalid={Boolean(errors.Status)}
                   aria-describedby={errors.Status ? "edit-st-error" : undefined}
@@ -298,6 +368,7 @@ function EditUser({
                 name="Course"
                 value={draft.Course || ""}
                 onChange={handleInputChange}
+                disabled={isSaving}
                 className={errors.Course ? "input-error" : ""}
                 aria-invalid={Boolean(errors.Course)}
                 aria-describedby={errors.Course ? "edit-cs-error" : undefined}
@@ -323,11 +394,16 @@ function EditUser({
               type="button"
               className="secondary-button"
               onClick={() => setEditUser(null)}
+              disabled={isSaving}
             >
               Cancel
             </button>
-            <button type="submit" className="primary-button">
-              Save Changes
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving Changes..." : "Save Changes"}
             </button>
           </div>
         </form>

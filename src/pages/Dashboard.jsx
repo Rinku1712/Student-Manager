@@ -12,7 +12,7 @@ const COURSES = [
   "B.Phar",
 ];
 
-function Dashboard({ students = [], onNavigate, onView, onEdit, onDelete }) {
+function Dashboard({ students = [], onNavigate, onView, onEdit, onDelete, isLoading = false }) {
   const activeCount = students.filter(
     (s) => (s?.Status || "").toLowerCase() === "active"
   ).length;
@@ -51,7 +51,7 @@ function Dashboard({ students = [], onNavigate, onView, onEdit, onDelete }) {
   return (
     <div className="dashboard-page animate-fade-in-up">
       {/* Welcome Banner */}
-      <section className="welcome-banner">
+      <section className="welcome-banner welcome-row">
         <div className="welcome-text">
           <p className="eyebrow">Overview</p>
           <h2>Keep your student records organized.</h2>
@@ -99,7 +99,12 @@ function Dashboard({ students = [], onNavigate, onView, onEdit, onDelete }) {
             )}
           </div>
 
-          {recentStudents.length === 0 ? (
+          {isLoading ? (
+            <div className="empty-state dashboard-empty">
+              <div className="spinner-dots" style={{ margin: "1.5rem auto" }} aria-hidden="true" />
+              <p>Loading recent registrations...</p>
+            </div>
+          ) : recentStudents.length === 0 ? (
             <div className="empty-state dashboard-empty">
               <div className="empty-icon" aria-hidden="true">📝</div>
               <h4>No registered students yet</h4>

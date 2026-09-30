@@ -12,7 +12,7 @@ const COURSES = [
   "B.Phar",
 ];
 
-function Students({ students = [], onNavigate, onView, onEdit, onDelete }) {
+function Students({ students = [], onNavigate, onView, onEdit, onDelete, isLoading = false }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
@@ -29,7 +29,7 @@ function Students({ students = [], onNavigate, onView, onEdit, onDelete }) {
       const ln = student.LastName || "";
       const em = student.Email || "";
       const sid = student.studentId || "";
-      const ph = student.Phone || "";
+      const ph = student.Mobile || student.Phone || "";
 
       const matchesSearch =
         !normalizedTerm ||
@@ -90,8 +90,8 @@ function Students({ students = [], onNavigate, onView, onEdit, onDelete }) {
 
   return (
     <div className="students-page animate-fade-in-up">
-      {/* Page Header */}
-      <div className="directory-header-row">
+      {/* Directory Page Header */}
+      <div className="directory-header-row welcome-row panel-heading">
         <div>
           <p className="eyebrow">Academic Records</p>
           <h2>Student Directory</h2>
@@ -196,7 +196,7 @@ function Students({ students = [], onNavigate, onView, onEdit, onDelete }) {
             {isFiltering && (
               <button
                 type="button"
-                className="reset-filter-btn"
+                className="reset-filter-btn text-button"
                 onClick={clearFilters}
                 title="Reset all filters"
               >
@@ -213,7 +213,12 @@ function Students({ students = [], onNavigate, onView, onEdit, onDelete }) {
         </div>
 
         {/* Directory Content */}
-        {students.length === 0 ? (
+        {isLoading ? (
+          <div className="empty-state">
+            <div className="spinner-dots" style={{ margin: "1.5rem auto" }} aria-hidden="true" />
+            <p>Loading students from database...</p>
+          </div>
+        ) : students.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon" aria-hidden="true">📝</div>
             <h3>Your student directory is ready</h3>

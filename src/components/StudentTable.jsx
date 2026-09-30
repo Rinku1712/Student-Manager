@@ -49,9 +49,9 @@ function StudentTable({ students = [], onView, onEdit, onDelete }) {
                     <span className="contact-email" title={student.Email}>
                       {student.Email || "No email"}
                     </span>
-                    {student.Phone && (
-                      <span className="contact-phone" title={student.Phone}>
-                        📞 {student.Phone}
+                    {(student.Mobile || student.Phone) && (
+                      <span className="contact-phone" title={student.Mobile || student.Phone}>
+                        📞 {student.Mobile || student.Phone}
                       </span>
                     )}
                   </div>
